@@ -9,3 +9,7 @@ table {
 .custom-text::placeholder {
     color:#666;
 }
+
+.refresh-checkbox {
+    margin-left: 10px;
+}

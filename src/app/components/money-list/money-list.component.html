@@ -1,5 +1,15 @@
 <mat-card>
-    <button mat-raised-button (click)="refreshData()">Обновить данные</button>
+    <button
+        mat-raised-button
+        [disabled]="isRefreshing"
+        (click)="refreshData()"
+    >Обновить данные</button>
+    <mat-checkbox
+        [checked]="isRefreshing"
+        class="refresh-checkbox"
+        color="primary"
+        (change)="setAutoRefresh($event.checked)"
+    >Обновлять каждые 10 сек</mat-checkbox>
 </mat-card>
 
 <table mat-table [dataSource]="valutes" class="mat-elevation-z8">

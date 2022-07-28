@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 //@ts-ignore
-import { Subject, Observable } from 'rxjs';
+import { Subject } from 'rxjs';
 import { map, takeUntil } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
 import { Response, ValuteItem } from '../../types';
@@ -16,8 +16,10 @@ export class MoneyListComponent implements OnInit, OnDestroy {
   public displayedColumns: string[] = ['Name', 'Value', 'NumOfMoney'];
 
   private readonly destroy$ = new Subject();
+
   public numOfRub: number | null = null;
   public valutes: ValuteItem[] = [];
+  public isRefreshing: boolean = false;
 
   constructor(
     private api: ApiService,
@@ -34,8 +36,11 @@ export class MoneyListComponent implements OnInit, OnDestroy {
   }
 
   public refreshData(): void {
-    alert('jjj')
     this.setModeyData();
+  }
+
+  public setAutoRefresh(value: boolean) {
+    this.isRefreshing = value;
   }
 
   private setModeyData(): void {
