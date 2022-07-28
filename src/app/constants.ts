@@ -1,0 +1,1 @@
+export const HTTP_URL: string = 'https://www.cbr-xml-daily.ru/daily_json.js';

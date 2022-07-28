@@ -7,12 +7,14 @@ import { HttpClientModule } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MoneyListComponent } from './components/money-list/money-list.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    MoneyListComponent
+    MoneyListComponent,
   ],
   imports: [
     BrowserModule,
@@ -20,7 +22,9 @@ import { MoneyListComponent } from './components/money-list/money-list.component
     HttpClientModule,
     MatCardModule,
     MatButtonModule,
-    MatTableModule
+    MatTableModule,
+    MatFormFieldModule,
+    MatInputModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
