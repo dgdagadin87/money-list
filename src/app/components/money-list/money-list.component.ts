@@ -53,7 +53,7 @@ export class MoneyListComponent implements OnInit, OnDestroy {
       if (this.subscription) {
         this.subscription.unsubscribe();
       }
-      const pollingObservable$: Observable<ValuteItem[]> = this.getObservableForPolling();
+      const pollingObservable$ = this.getObservableForPolling();
       this.subscription = pollingObservable$.subscribe(this.prepareData);
     }
     else {
