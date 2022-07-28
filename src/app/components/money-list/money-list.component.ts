@@ -1,9 +1,9 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 //@ts-ignore
-import { Subject } from 'rxjs';
-import { map, takeUntil } from 'rxjs/operators';
+import { Subject, Observable, timer } from 'rxjs';
+import { takeUntil, switchMap, retry, share } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
-import { Response, ValuteItem } from '../../types';
+import { ValuteItem } from '../../types';
 
 @Component({
   selector: 'app-money-list',
@@ -14,8 +14,8 @@ import { Response, ValuteItem } from '../../types';
 export class MoneyListComponent implements OnInit, OnDestroy {
 
   public displayedColumns: string[] = ['Name', 'Value', 'NumOfMoney'];
-
   private readonly destroy$ = new Subject();
+  private subscription: any = null;
 
   public numOfRub: number | null = null;
   public valutes: ValuteItem[] = [];
@@ -24,15 +24,22 @@ export class MoneyListComponent implements OnInit, OnDestroy {
   constructor(
     private api: ApiService,
     private cdr: ChangeDetectorRef,
-  ) {}
+  ) { this.prepareData = this.prepareData.bind(this); }
 
   ngOnInit(): void {
     this.setModeyData();
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next(null);
     this.destroy$.complete();
+  }
+
+  private getObservableForPolling(): Observable<ValuteItem[]> {
+    return timer(200, 10000)
+      .pipe(
+        switchMap(() => this.api.getMoneyList()),
+        retry(), share(), takeUntil(this.destroy$)
+      );
   }
 
   public refreshData(): void {
@@ -41,21 +48,31 @@ export class MoneyListComponent implements OnInit, OnDestroy {
 
   public setAutoRefresh(value: boolean) {
     this.isRefreshing = value;
+    
+    if (value) {
+      if (this.subscription) {
+        this.subscription.unsubscribe();
+      }
+      const pollingObservable$: Observable<ValuteItem[]> = this.getObservableForPolling();
+      this.subscription = pollingObservable$.subscribe(this.prepareData);
+    }
+    else {
+      if (this.subscription) {
+        this.subscription.unsubscribe();
+        this.subscription = null;
+      }
+    }
+  }
+
+  private prepareData(data: ValuteItem[]): void {
+    this.valutes = data;
+    this.cdr.markForCheck();
   }
 
   private setModeyData(): void {
     this.api.getMoneyList()
-      .pipe(
-        takeUntil(this.destroy$),
-        map((data: Response) => Object.values(data.Valute)),
-        map((valutes: ValuteItem[]) => {
-          return valutes.map((valute: ValuteItem) => ({ ...valute, NumOfMoney: 0 }) );
-        }),
-      )
-      .subscribe((data: ValuteItem[]) => {
-        this.valutes = data;
-        this.cdr.markForCheck();
-      });
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(this.prepareData);
   }
 
 }
