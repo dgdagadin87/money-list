@@ -1,24 +1,9 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-
-export interface PeriodicElement {
-  name: string;
-  position: number;
-  weight: number;
-  symbol: string;
-}
-
-const ELEMENT_DATA: PeriodicElement[] = [
-  {position: 1, name: 'Hydrogen', weight: 1.0079, symbol: 'H'},
-  {position: 2, name: 'Helium', weight: 4.0026, symbol: 'He'},
-  {position: 3, name: 'Lithium', weight: 6.941, symbol: 'Li'},
-  {position: 4, name: 'Beryllium', weight: 9.0122, symbol: 'Be'},
-  {position: 5, name: 'Boron', weight: 10.811, symbol: 'B'},
-  {position: 6, name: 'Carbon', weight: 12.0107, symbol: 'C'},
-  {position: 7, name: 'Nitrogen', weight: 14.0067, symbol: 'N'},
-  {position: 8, name: 'Oxygen', weight: 15.9994, symbol: 'O'},
-  {position: 9, name: 'Fluorine', weight: 18.9984, symbol: 'F'},
-  {position: 10, name: 'Neon', weight: 20.1797, symbol: 'Ne'},
-];
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+//@ts-ignore
+import { Subject, Observable } from 'rxjs';
+import { map, takeUntil } from 'rxjs/operators';
+import { ApiService } from '../../services/api.service';
+import { Response, ValuteItem } from '../../types';
 
 @Component({
   selector: 'app-money-list',
@@ -26,14 +11,46 @@ const ELEMENT_DATA: PeriodicElement[] = [
   styleUrls: ['./money-list.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MoneyListComponent implements OnInit {
+export class MoneyListComponent implements OnInit, OnDestroy {
 
-  displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
-  dataSource = ELEMENT_DATA;
+  public displayedColumns: string[] = ['Name', 'Value', 'NumOfMoney'];
 
-  constructor() { }
+  private readonly destroy$ = new Subject();
+  public numOfRub: number | null = null;
+  public valutes: ValuteItem[] = [];
+
+  constructor(
+    private api: ApiService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
+    this.setModeyData();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next(null);
+    this.destroy$.complete();
+  }
+
+  public refreshData(): void {
+    alert('jjj')
+    this.setModeyData();
+  }
+
+  private setModeyData(): void {
+    this.api.getMoneyList()
+      .pipe(
+        takeUntil(this.destroy$),
+        map((data: Response) => Object.values(data.Valute)),
+        map((valutes: ValuteItem[]) => {
+          return valutes.map((valute: ValuteItem) => ({ ...valute, NumOfMoney: 0 }) );
+        }),
+      )
+      .subscribe((data: ValuteItem[]) => {
+        this.valutes = data;
+        this.cdr.markForCheck();
+      });
   }
 
 }

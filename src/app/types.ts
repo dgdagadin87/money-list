@@ -6,6 +6,7 @@ export interface ValuteItem {
     Name: string;
     Value: number;
     Previous: number;
+    NumOfMoney?: number;
 };
 
 export interface Response {
