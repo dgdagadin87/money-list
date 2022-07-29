@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 //@ts-ignore
 import { Subject, Observable, timer } from 'rxjs';
-import { takeUntil, switchMap, retry, share } from 'rxjs/operators';
+import { takeUntil, switchMap, retry, share, repeatWhen } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
 import { ValuteItem } from '../../types';
 
@@ -13,13 +13,15 @@ import { ValuteItem } from '../../types';
 })
 export class MoneyListComponent implements OnInit, OnDestroy {
 
-  public displayedColumns: string[] = ['Name', 'Value', 'NumOfMoney'];
   private readonly destroy$ = new Subject();
-  private subscription: any = null;
+  private readonly start$ = new Subject();
+  private readonly stop$ = new Subject();
+  private isSubscribed: boolean = false;
 
   public numOfRub: number | null = null;
   public valutes: ValuteItem[] = [];
   public isRefreshing: boolean = false;
+  public displayedColumns: string[] = ['Name', 'Value', 'NumOfMoney'];
 
   constructor(
     private api: ApiService,
@@ -31,36 +33,32 @@ export class MoneyListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroy$.complete();
-  }
-
-  private getObservableForPolling(): Observable<ValuteItem[]> {
-    return timer(200, 10000)
-      .pipe(
-        switchMap(() => this.api.getMoneyList()),
-        retry(), share(), takeUntil(this.destroy$)
-      );
+    this.stop$.next(null);
+    this.destroy$.next(null);
   }
 
   public refreshData(): void {
     this.setModeyData();
   }
 
-  public setAutoRefresh(value: boolean) {
+  public setAutoRefresh(value: boolean): void {
     this.isRefreshing = value;
-    
+
     if (value) {
-      if (this.subscription) {
-        this.subscription.unsubscribe();
+      if (!this.isSubscribed) {
+        this.isSubscribed = true;
+        timer(200, 10000)
+          .pipe(
+            switchMap(() => this.api.getMoneyList()),
+            retry(), share(), takeUntil(this.stop$),
+            repeatWhen(() => this.start$)
+          )
+          .subscribe(this.prepareData)
       }
-      const pollingObservable$ = this.getObservableForPolling();
-      this.subscription = pollingObservable$.subscribe(this.prepareData);
+      this.start$.next(null);
     }
     else {
-      if (this.subscription) {
-        this.subscription.unsubscribe();
-        this.subscription = null;
-      }
+      this.stop$.next(null);
     }
   }
 
