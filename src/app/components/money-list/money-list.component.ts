@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 //@ts-ignore
-import { Subject, Observable, timer } from 'rxjs';
-import { takeUntil, switchMap, retry, share, repeatWhen } from 'rxjs/operators';
+import { Subject, timer, fromEvent } from 'rxjs';
+import { Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { takeUntil, switchMap, retry, share, repeatWhen, debounceTime, map, distinctUntilChanged } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
 import { ValuteItem } from '../../types';
 
@@ -11,14 +11,16 @@ import { ValuteItem } from '../../types';
   styleUrls: ['./money-list.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MoneyListComponent implements OnInit, OnDestroy {
+export class MoneyListComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private readonly destroy$ = new Subject();
   private readonly start$ = new Subject();
   private readonly stop$ = new Subject();
   private isSubscribed: boolean = false;
 
-  public numOfRub: number | null = null;
+  @ViewChild('numOfRubInput', { static: false }) numOfRubInput: ElementRef;
+
+  public numOfRub: number = 0;
   public valutes: ValuteItem[] = [];
   public isRefreshing: boolean = false;
   public displayedColumns: string[] = ['Name', 'Value', 'NumOfMoney'];
@@ -26,10 +28,14 @@ export class MoneyListComponent implements OnInit, OnDestroy {
   constructor(
     private api: ApiService,
     private cdr: ChangeDetectorRef,
-  ) { this.prepareData = this.prepareData.bind(this); }
+  ) { }
 
   ngOnInit(): void {
     this.setModeyData();
+  }
+
+  ngAfterViewInit(): void {
+    this.subscribeToInput();
   }
 
   ngOnDestroy(): void {
@@ -62,7 +68,39 @@ export class MoneyListComponent implements OnInit, OnDestroy {
     }
   }
 
-  private prepareData(data: ValuteItem[]): void {
+  private subscribeToInput(): void {
+    const prepareValue = (res: string) => {
+      const value: number = parseInt(res);
+      if (isNaN(value)) {
+        return 0;
+      }
+      return value;
+    };
+
+    fromEvent(this.numOfRubInput.nativeElement, 'keyup')
+      .pipe(
+        map((event: any) => event.target?.value),
+        map((res: string) => prepareValue(res)),
+        distinctUntilChanged(),
+        debounceTime(300),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(this.recountData);
+  }
+
+  private recountData = (numOfRub: number): void => {
+    this.numOfRub = numOfRub;
+    
+    const valutes: ValuteItem[] = this.valutes || [];
+    this.valutes = valutes.map((valute: ValuteItem) => {
+      const value: number = valute.Value;
+      const numOfMoney = numOfRub / value;
+      return { ...valute, NumOfMoney: parseFloat(numOfMoney.toFixed(3)), };
+    });
+    this.cdr.markForCheck();
+  }
+
+  private prepareData = (data: ValuteItem[]): void => {
     this.valutes = data;
     this.cdr.markForCheck();
   }
