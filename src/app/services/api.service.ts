@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map } from 'rxjs/operators';
-//@ts-ignore
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { Response, ValuteItem } from '../types';
 import { HTTP_URL } from '../constants';

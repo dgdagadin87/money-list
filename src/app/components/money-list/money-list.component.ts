@@ -1,6 +1,5 @@
-//@ts-ignore
-import { Subject, timer, fromEvent } from 'rxjs';
 import { Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { Subject, timer, fromEvent } from 'rxjs';
 import { takeUntil, switchMap, retry, share, repeatWhen, debounceTime, map, distinctUntilChanged } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
 import { ValuteItem } from '../../types';
